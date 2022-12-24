@@ -1,26 +1,63 @@
-import tensorflow as tf
-from tensorflow.keras import losses
-import numpy as np
-import matplotlib.pyplot as plt
+import os
 import time
 import datetime
-import os
+
+import numpy as np
+import tensorflow as tf
 from gym import spaces
+from tensorflow.keras import losses
+import matplotlib.pyplot as plt
+
 from helpers import fixed, update_target
 from agent import Agent
 
 
-def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_size=64,
-        std_dev=0.3, critic_lr=0.003, render=False,
-        actor_lr=0.002, gamma=0.99, tau=0.005, noise_mult=1, save_weights=True,
-        directory='Weights/', gamma_func=fixed, tau_func=fixed, critic_lr_func=fixed, actor_lr_func=fixed,
-        noise_mult_func=fixed, std_dev_func=fixed, mean_number=20, output=True,
-        return_rewards=False, total_time=True, reward_mod=False, solved=200,
-        continuous=True, seed=1453, start_steps=0,
-        epsilon=0.2, epsilon_func=fixed, adam_critic_eps=1e-07, adam_actor_eps=1e-07,
-        actor_amsgrad=False, critic_amsgrad=False, actor_layer_1=256, actor_layer_2=256,
-        critic_layer_1=256, critic_layer_2=256, theta=0.15, dt=1e-2, disc_actions_num=4,
-        loss_func=losses.MeanAbsoluteError(), use_gpu=True):
+def run(
+    env,
+    total_trials=1,
+    total_episodes=100,
+    buffer_capacity=50000,
+    batch_size=64,
+    std_dev=0.3,
+    critic_lr=0.003,
+    render=False,
+    actor_lr=0.002,
+    gamma=0.99,
+    tau=0.005,
+    noise_mult=1,
+    save_weights=True,
+    directory="Weights/",
+    gamma_func=fixed,
+    tau_func=fixed,
+    critic_lr_func=fixed,
+    actor_lr_func=fixed,
+    noise_mult_func=fixed,
+    std_dev_func=fixed,
+    mean_number=20,
+    output=True,
+    return_rewards=False,
+    total_time=True,
+    reward_mod=False,
+    solved=200,
+    continuous=True,
+    seed=1453,
+    start_steps=0,
+    epsilon=0.2,
+    epsilon_func=fixed,
+    adam_critic_eps=1e-07,
+    adam_actor_eps=1e-07,
+    actor_amsgrad=False,
+    critic_amsgrad=False,
+    actor_layer_1=256,
+    actor_layer_2=256,
+    critic_layer_1=256,
+    critic_layer_2=256,
+    theta=0.15,
+    dt=1e-2,
+    disc_actions_num=4,
+    loss_func=losses.MeanAbsoluteError(),
+    use_gpu=True,
+):
 
     tot_time = time.time()
 
@@ -33,7 +70,7 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
         continuous = True
 
     if not use_gpu:
-        os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+        os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
 
     num_states = env.observation_space.low.shape[0]
     if continuous:
@@ -42,8 +79,7 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
         num_actions = 1
 
     # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
-    env.action_space = spaces.Box(
-        low=-1, high=1, shape=(num_actions,), dtype='float32')
+    env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
     ep_reward_list = []
     avg_reward_list = []
@@ -59,11 +95,31 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
         true_reward_list.append([])
         true_avg_reward_list.append([])
 
-        agent = Agent(num_states, num_actions, continuous,
-                      buffer_capacity, batch_size, std_dev, actor_lr, critic_lr,
-                      gamma, tau, epsilon, adam_critic_eps, adam_actor_eps,
-                      actor_amsgrad, critic_amsgrad, actor_layer_1, actor_layer_2,
-                      critic_layer_1, critic_layer_2, theta, dt, disc_actions_num, loss_func)
+        agent = Agent(
+            num_states,
+            num_actions,
+            continuous,
+            buffer_capacity,
+            batch_size,
+            std_dev,
+            actor_lr,
+            critic_lr,
+            gamma,
+            tau,
+            epsilon,
+            adam_critic_eps,
+            adam_actor_eps,
+            actor_amsgrad,
+            critic_amsgrad,
+            actor_layer_1,
+            actor_layer_2,
+            critic_layer_1,
+            critic_layer_2,
+            theta,
+            dt,
+            disc_actions_num,
+            loss_func,
+        )
 
         for ep in range(total_episodes):
             before = time.time()
@@ -84,12 +140,16 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
                 if render:
                     env.render()
 
-                tf_prev_state = tf.expand_dims(
-                    tf.convert_to_tensor(prev_state), 0)
+                tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
 
                 if step >= start_steps:
-                    action = agent.policy(state=tf_prev_state, disc_actions_num=disc_actions_num,
-                                          noise_object=agent.ou_noise, noise_mult=noise_mult, rng=rng)
+                    action = agent.policy(
+                        state=tf_prev_state,
+                        disc_actions_num=disc_actions_num,
+                        noise_object=agent.ou_noise,
+                        noise_mult=noise_mult,
+                        rng=rng,
+                    )
                 else:
                     action = env.action_space.sample()
 
@@ -112,14 +172,17 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
 
                 terminal_state = int(not done)
 
-                agent.record(
-                    (prev_state, action, reward, state, terminal_state))
+                agent.record((prev_state, action, reward, state, terminal_state))
 
                 agent.learn()
-                update_target(agent.target_actor.variables,
-                              agent.actor_model.variables, agent.tau)
-                update_target(agent.target_critic.variables,
-                              agent.critic_model.variables, agent.tau)
+                update_target(
+                    agent.target_actor.variables, agent.actor_model.variables, agent.tau
+                )
+                update_target(
+                    agent.target_critic.variables,
+                    agent.critic_model.variables,
+                    agent.tau,
+                )
 
                 episodic_reward += reward
 
@@ -136,8 +199,17 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
             true_avg_reward_list[trial].append(true_avg_reward)
 
             if output:
-                print("Ep {} * AvgReward {:.2f} * true AvgReward {:.2f} * Reward {:.2f} * True Reward {:.2f} * time {:.2f} * step {}"
-                      .format(ep, avg_reward, true_avg_reward, episodic_reward, true_reward, (time.time() - before), step))
+                print(
+                    "Ep {} * AvgReward {:.2f} * true AvgReward {:.2f} * Reward {:.2f} * True Reward {:.2f} * time {:.2f} * step {}".format(
+                        ep,
+                        avg_reward,
+                        true_avg_reward,
+                        episodic_reward,
+                        true_reward,
+                        (time.time() - before),
+                        step,
+                    )
+                )
 
             # Stop if avg is above 'solved'
             if true_avg_reward >= solved:
@@ -146,19 +218,22 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
         # Save weights
         now = datetime.datetime.now()
         timestamp = "{}.{}.{}.{}.{}.{}".format(
-            now.year, now.month, now.day, now.hour, now.minute, now.second)
+            now.year, now.month, now.day, now.hour, now.minute, now.second
+        )
         save_name = "{}_{}_{}".format(env.spec.id, continuous, timestamp)
         if save_weights:
             try:
                 agent.actor_model.save_weights(
-                    directory + 'actor-trial' + str(trial) + '_' + save_name + '.h5')
+                    directory + "actor-trial" + str(trial) + "_" + save_name + ".h5"
+                )
             except:
-                print('actor save fail')
+                print("actor save fail")
             try:
                 agent.critic_model.save_weights(
-                    directory + 'critic-trial' + str(trial) + '_' + save_name + '.h5')
+                    directory + "critic-trial" + str(trial) + "_" + save_name + ".h5"
+                )
             except:
-                print('critic save fail')
+                print("critic save fail")
 
     # Plotting graph
     for idx, p in enumerate(true_avg_reward_list):
@@ -167,18 +242,20 @@ def run(env, total_trials=1, total_episodes=100, buffer_capacity=50000, batch_si
     plt.ylabel("True Avg. Epsiodic Reward (" + str(mean_number) + ")")
     plt.legend()
     try:
-        plt.savefig('Graphs/' + save_name + '.png')
+        plt.savefig("Graphs/" + save_name + ".png")
     except:
-        print('fig save fail')
+        print("fig save fail")
     plt.show()
 
-    print('total time:', time.time() - tot_time, 's')
+    print("total time:", time.time() - tot_time, "s")
 
     if return_rewards:
         return true_reward_list
 
 
-def test(env, actor_weights, total_episodes=10, render=False, disc_actions_num=4, seed=1453):
+def test(
+    env, actor_weights, total_episodes=10, render=False, disc_actions_num=4, seed=1453
+):
     rewards = []
 
     _ = env.reset(seed=seed)
@@ -195,8 +272,7 @@ def test(env, actor_weights, total_episodes=10, render=False, disc_actions_num=4
         num_actions = 1
 
     # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
-    env.action_space = spaces.Box(
-        low=-1, high=1, shape=(num_actions,), dtype='float32')
+    env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
     for ep in range(total_episodes):
         ep_reward = 0
@@ -204,8 +280,13 @@ def test(env, actor_weights, total_episodes=10, render=False, disc_actions_num=4
         before = time.time()
 
         prev_state = env.reset()
-        agent = Agent(num_states=num_states, num_actions=num_actions, continuous=continuous,
-                      buffer_capacity=0, batch_size=0)
+        agent = Agent(
+            num_states=num_states,
+            num_actions=num_actions,
+            continuous=continuous,
+            buffer_capacity=0,
+            batch_size=0,
+        )
         agent.actor_model.load_weights(actor_weights)
 
         while True:
@@ -214,7 +295,8 @@ def test(env, actor_weights, total_episodes=10, render=False, disc_actions_num=4
 
             tf_prev_state = tf.expand_dims(tf.convert_to_tensor(prev_state), 0)
             action = agent.policy(
-                state=tf_prev_state, disc_actions_num=disc_actions_num, use_noise=False)
+                state=tf_prev_state, disc_actions_num=disc_actions_num, use_noise=False
+            )
 
             if continuous:
                 try:
@@ -228,7 +310,7 @@ def test(env, actor_weights, total_episodes=10, render=False, disc_actions_num=4
             ep_reward += reward
 
             if done:
-                print(str(time.time() - before) + 's')
+                print(str(time.time() - before) + "s")
                 rewards.append(ep_reward)
                 break
 
@@ -258,8 +340,7 @@ def random(env, total_episodes=10, render=False, seed=1453):
         num_actions = 1
 
     # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
-    env.action_space = spaces.Box(
-        low=-1, high=1, shape=(num_actions,), dtype='float32')
+    env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
     for ep in range(total_episodes):
         ep_reward = 0
@@ -276,7 +357,7 @@ def random(env, total_episodes=10, render=False, seed=1453):
             ep_reward += reward
 
             if done:
-                print(str(time.time() - before) + 's')
+                print(str(time.time() - before) + "s")
                 rewards.append(ep_reward)
                 break
 

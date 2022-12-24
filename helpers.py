@@ -15,8 +15,7 @@ class OUActionNoise:
         x = (
             self.x_prev
             + self.theta * (self.mean - self.x_prev) * self.dt
-            + self.std_dev * np.sqrt(self.dt) *
-            np.random.normal(size=self.mean.shape)
+            + self.std_dev * np.sqrt(self.dt) * np.random.normal(size=self.mean.shape)
         )
         self.x_prev = x
         return x

@@ -2,11 +2,20 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 
-def get_actor(num_states, num_actions, continuous, disc_actions_num, layer1, layer2,
-              init_weights_min=-0.003, init_weights_max=0.003):
+def get_actor(
+    num_states,
+    num_actions,
+    continuous,
+    disc_actions_num,
+    layer1,
+    layer2,
+    init_weights_min=-0.003,
+    init_weights_max=0.003,
+):
 
     last_init = tf.random_uniform_initializer(
-        minval=init_weights_min, maxval=init_weights_max)
+        minval=init_weights_min, maxval=init_weights_max
+    )
 
     ### ACTOR NETWORK ###
 
@@ -17,10 +26,12 @@ def get_actor(num_states, num_actions, continuous, disc_actions_num, layer1, lay
     out = layers.LayerNormalization(axis=1)(out)
     if continuous:
         outputs = layers.Dense(
-            num_actions, activation="tanh", kernel_initializer=last_init)(out)
+            num_actions, activation="tanh", kernel_initializer=last_init
+        )(out)
     else:
         outputs = layers.Dense(
-            disc_actions_num, activation="softmax", kernel_initializer=last_init)(out)
+            disc_actions_num, activation="softmax", kernel_initializer=last_init
+        )(out)
 
     return tf.keras.Model(inputs, outputs)
 
