@@ -199,16 +199,15 @@ def run(
             true_avg_reward_list[trial].append(true_avg_reward)
 
             if output:
+                time_elapsed = time.time() - before
                 print(
-                    "Ep {} * AvgReward {:.2f} * true AvgReward {:.2f} * Reward {:.2f} * True Reward {:.2f} * time {:.2f} * step {}".format(
-                        ep,
-                        avg_reward,
-                        true_avg_reward,
-                        episodic_reward,
-                        true_reward,
-                        (time.time() - before),
-                        step,
-                    )
+                    f"Ep {ep:.3f} * "
+                    f"AvgReward {avg_reward:.2f} * "
+                    f"true AvgReward {true_avg_reward:.2f} * "
+                    f"Reward {episodic_reward:.2f} * "
+                    f"True Reward {true_reward:.2f} * "
+                    f"time {time_elapsed:.2f} * "
+                    f"step {step}"
                 )
 
             # Stop if avg is above 'solved'
@@ -217,20 +216,20 @@ def run(
 
         # Save weights
         now = datetime.datetime.now()
-        timestamp = "{}.{}.{}.{}.{}.{}".format(
-            now.year, now.month, now.day, now.hour, now.minute, now.second
+        timestamp = (
+            f"{now.year}.{now.month}.{now.day}.{now.hour}.{now.minute}.{now.second}"
         )
-        save_name = "{}_{}_{}".format(env.spec.id, continuous, timestamp)
+        save_name = f"{env.spec.id}_{continuous}_{timestamp}"
         if save_weights:
             try:
                 agent.actor_model.save_weights(
-                    directory + "actor-trial" + str(trial) + "_" + save_name + ".h5"
+                    f"{directory}actor-trial{trial}_{save_name}.h5"
                 )
             except:
                 print("actor save fail")
             try:
                 agent.critic_model.save_weights(
-                    directory + "critic-trial" + str(trial) + "_" + save_name + ".h5"
+                    f"{directory}critic-trial{trial}_{save_name}.h5"
                 )
             except:
                 print("critic save fail")
@@ -274,7 +273,7 @@ def test(
     # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
     env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
-    for ep in range(total_episodes):
+    for _ in range(total_episodes):
         ep_reward = 0
 
         before = time.time()
@@ -342,7 +341,7 @@ def random(env, total_episodes=10, render=False, seed=1453):
     # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
     env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
-    for ep in range(total_episodes):
+    for _ in range(total_episodes):
         ep_reward = 0
 
         before = time.time()
@@ -357,7 +356,8 @@ def random(env, total_episodes=10, render=False, seed=1453):
             ep_reward += reward
 
             if done:
-                print(str(time.time() - before) + "s")
+                elapsed_time = time.time() - before
+                print(f"{elapsed_time}s")
                 rewards.append(ep_reward)
                 break
 
