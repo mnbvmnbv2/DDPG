@@ -8,7 +8,7 @@ from gym import spaces
 from tensorflow.keras import losses
 import matplotlib.pyplot as plt
 
-from helpers import fixed, update_target
+from helpers import fixed
 from agent import Agent
 
 
@@ -160,9 +160,9 @@ def run(
                         len(action)
                     except:
                         action = [action]
-                    state, reward, done, info = env.step(action)
+                    state, reward, done, _ = env.step(action)
                 else:
-                    state, reward, done, info = env.step(np.argmax(action))
+                    state, reward, done, _ = env.step(np.argmax(action))
 
                 true_reward += reward
 
@@ -175,14 +175,6 @@ def run(
                 agent.record((prev_state, action, reward, state, terminal_state))
 
                 agent.learn()
-                update_target(
-                    agent.target_actor.variables, agent.actor_model.variables, agent.tau
-                )
-                update_target(
-                    agent.target_critic.variables,
-                    agent.critic_model.variables,
-                    agent.tau,
-                )
 
                 episodic_reward += reward
 
@@ -241,12 +233,13 @@ def run(
     plt.ylabel("True Avg. Epsiodic Reward (" + str(mean_number) + ")")
     plt.legend()
     try:
-        plt.savefig("Graphs/" + save_name + ".png")
+        plt.savefig(f"Graphs/{save_name}.png")
     except:
         print("fig save fail")
     plt.show()
 
-    print("total time:", time.time() - tot_time, "s")
+    total_elapsed_time = time.time() - tot_time
+    print(f"total time: {total_elapsed_time}s")
 
     if return_rewards:
         return true_reward_list
@@ -302,9 +295,9 @@ def test(
                     len(action)
                 except:
                     action = [action]
-                state, reward, done, info = env.step(action)
+                state, reward, done, _ = env.step(action)
             else:
-                state, reward, done, info = env.step(np.argmax(action))
+                state, reward, done, _ = env.step(np.argmax(action))
 
             ep_reward += reward
 
@@ -326,20 +319,6 @@ def random(env, total_episodes=10, render=False, seed=1453):
 
     _ = env.reset(seed=seed)
     rng = np.random.default_rng(seed)
-
-    try:
-        continuous = env.continuous
-    except:
-        continuous = True
-
-    num_states = env.observation_space.low.shape[0]
-    if continuous:
-        num_actions = env.action_space.shape[0]
-    else:
-        num_actions = 1
-
-    # Normalize action space according to https://stable-baselines3.readthedocs.io/en/master/guide/rl_tips.html
-    env.action_space = spaces.Box(low=-1, high=1, shape=(num_actions,), dtype="float32")
 
     for _ in range(total_episodes):
         ep_reward = 0

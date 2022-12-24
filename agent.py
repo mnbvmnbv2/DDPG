@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 from networks import get_actor, get_critic
-from helpers import OUActionNoise
+from helpers import OUActionNoise, update_target
 
 
 class Agent:
@@ -189,6 +189,13 @@ class Agent:
             next_state_batch,
             done_batch,
             self.loss_func,
+        )
+
+        update_target(self.target_actor.variables, self.actor_model.variables, self.tau)
+        update_target(
+            self.target_critic.variables,
+            self.critic_model.variables,
+            self.tau,
         )
 
     def policy(

@@ -17,8 +17,6 @@ def get_actor(
         minval=init_weights_min, maxval=init_weights_max
     )
 
-    ### ACTOR NETWORK ###
-
     inputs = layers.Input(shape=(num_states,))
     out = layers.Dense(layer1, activation="relu")(inputs)
     out = layers.LayerNormalization(axis=1)(out)
@@ -37,8 +35,6 @@ def get_actor(
 
 
 def get_critic(num_states, num_actions, continuous, disc_actions_num, layer1, layer2):
-
-    ### CRITIC NETWORK ###
 
     state_input = layers.Input(shape=(num_states,))
     state_out = layers.Dense(64, activation="relu")(state_input)
